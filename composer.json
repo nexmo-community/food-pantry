@@ -1,0 +1,35 @@
+{
+  "name": "nexmo/php-skeleton-app",
+  "description": "Sample PHP Application to test environment setup",
+  "license": "MIT",
+  "type": "project",
+  "authors": [
+    {
+      "name": "Chris Tankersley",
+      "email": "chris.tankersley@vonage.com",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "devrel@nexmo.com"
+  },
+    "require": {
+        "slim/slim": "4.*",
+        "slim/psr7": "^0.6.0",
+        "vlucas/phpdotenv": "^4.1",
+        "slim/twig-view": "^3.0",
+        "php-di/php-di": "^6.0",
+        "nexmo/client": "^2.0",
+        "slim/flash": "^0.4.0",
+        "kanellov/slim-twig-flash": "^0.2.0",
+        "twig/extensions": "^1.5.0"
+    },
+    "autoload": {
+        "psr-4":{
+            "NexmoPHPSkeleton\\": "src/"
+        }
+    },
+    "scripts":{
+        "serve": "php -S 0.0.0.0:8000 -t public/"
+    }
+}
