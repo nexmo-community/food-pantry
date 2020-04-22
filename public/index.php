@@ -13,6 +13,7 @@ use NexmoPHPSkeleton\Middleware\Session;
 use Zend\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Ramsey\Uuid\Uuid;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -29,6 +30,12 @@ $container->set('view', function() use ($container) {
     $twig->addExtension(new TwigMessages($container->get('flash')));
     return $twig;
 });
+$container->set('db', function() use ($container) {
+    $pdo = new \PDO(getenv('DB.DSN'));
+    $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+    return $pdo;
+});
 AppFactory::setContainer($container);
 
 // Instantiate App
@@ -44,51 +51,53 @@ $app->get('/', function (Request $request, Response $response) {
     return $this->get('view')->render($response, 'homepage.twig.html');
 });
 
-$app->post('/', function (Request $request, Response $response) {
-    $nexmo = new Client(
-        new Basic(getenv('NEXMO_API_KEY'), getenv('NEXMO_API_SECRET')),
-        ['app' => ['name' => 'php-skeleton-app', 'version' => '1.0.0']]
-    );
-    $body = $request->getParsedBody();
+$app->map(['GET', 'POST'], '/login', function (Request $request, Response $response) {
+    if ($request->getMethod() === "POST") {
+        $email = $request->getParsedBody()['email'];
+        $password = $request->getParsedBody()['password'];
 
-    if (!array_key_exists('to', $body)) {
-        $this->get('flash')->addMessage('error', 'You must supply a number to send to');
-    }
+        /** @var \PDO $db */
+        $db = $this->get('db');
+        $stmt = $db->prepare('SELECT * FROM users WHERE email = :email');
+        $stmt->execute(['email' => $email]);
 
-    if (!array_key_exists('from', $body)) {
-        $this->get('flash')->addMessage('error', 'You must supply a number to send from, and it must be a Nexmo number');
-    }
-
-    if (!array_key_exists('text', $body)) {
-        $this->get('flash')->addMessage('error', 'You must supply a message to send');
-    }
-
-    if (empty($this->get('flash')->getMessages())) {
-        try {
-            $sms = $nexmo->message()->send([
-                'to' => $body['to'],
-                'from' => $body['from'],
-                'text' => $body['text'],
-            ]);
-            $this->get('flash')->addMessage('success', 'Message has been sent with ID ' . $sms->getMessageId());
-        } catch (\Exception $e) {
-            $this->get('flash')->addMessage('error', 'Message could not be sent - ' . $e->getMessage());
+        $user = $stmt->fetch();
+        if ($user) {
+            $this->get('flash')->addMessage('success', $password);
+            return new RedirectResponse('/');
+        } else {
+            $this->get('flash')->addMessage('error', 'Invalid username/password');
+            return new RedirectResponse('/login');
         }
     }
 
-    return new RedirectResponse('/');
+    return $this->get('view')->render($response, 'login.twig.html');
 });
 
-$app->map(['GET','POST'], '/webhooks/event', function (Request $request, Response $response) {
-    $params = $request->getParsedBody();
+$app->map(['GET', 'POST'], '/register', function (Request $request, Response $response) {
+    if ($request->getMethod() === "POST") {
+        $email = $request->getParsedBody()['email'];
+        $password = $request->getParsedBody()['password'];
 
-    if (!$params || !count($params)) {
-        $params = $request->getQueryParams();
+        /** @var \PDO $db */
+        $db = $this->get('db');
+        $stmt = $db->prepare('SELECT * FROM users WHERE email = :email');
+        $stmt->execute(['email' => $email]);
+
+        $user = $stmt->fetch();
+        if (!$user) {
+            $stmt = $db->prepare('INSERT INTO users (uuid, email, password) VALUES (:uuid, :email, :password)');
+            $stmt->execute(['uuid' => Uuid::uuid4()->toString(), 'email' => $email, 'password' => password_hash($password, PASSWORD_DEFAULT)]);
+
+            $this->get('flash')->addMessage('success', "Registered, please log in!");
+            return new RedirectResponse('/login');
+        } else {
+            $this->get('flash')->addMessage('error', 'Unable to register this user');
+            return new RedirectResponse('/register');
+        }
     }
 
-    error_log(json_encode($params));
-
-    return $response->withStatus(204);
+    return $this->get('view')->render($response, 'register.twig.html');
 });
 
 $app->run();

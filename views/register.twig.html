@@ -5,7 +5,7 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Nexmo PHP Skeleton Application</title>
+    <title>Register New User</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.2.0/tailwind.min.css" />
     <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
     <link rel="icon" href="/images/favicon.ico" />
@@ -35,7 +35,31 @@
         {% endfor %}
       </ul>
 
-      Content
+      <form method="post" class="w-full">
+        <div class="flex items-center mb-6">
+          <div class="w-1/2 text-right pr-4">
+            <label for="email">Email:</label>
+          </div>
+          <div class="w-1/2">
+            <input type="text" name="email" required class="border">
+          </div>
+        </div>
+
+        <div class="flex items-center mb-6">
+          <div class="w-1/2 text-right pr-4">
+            <label for="password">Password: </label>
+          </div>
+          <div class="w-1/2">
+            <input type="text" name="password" required class="border">
+          </div>
+        </div>
+
+        <div class="flex items-center mb-6">
+          <div class="w-full text-center">
+            <input type="submit" class="text-white bg-black p-4 rounded shadow" value="Register for Deliveries">
+          </div>
+        </div>
+      </form>
     </div>
   </body>
 </html>

@@ -1,3 +1,5 @@
 vendor/
 .env
 .php-version
+app.sqlite3
+phinx.yml
