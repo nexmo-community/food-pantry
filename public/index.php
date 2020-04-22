@@ -51,6 +51,10 @@ $app->get('/', function (Request $request, Response $response) {
     return $this->get('view')->render($response, 'homepage.twig.html');
 });
 
+$app->get('/admin', function (Request $request, Response $response) {
+    return $this->get('view')->render($response, 'admin.twig.html');
+});
+
 $app->map(['GET', 'POST'], '/login', function (Request $request, Response $response) {
     if ($request->getMethod() === "POST") {
         $email = $request->getParsedBody()['email'];
