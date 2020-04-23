@@ -14,6 +14,7 @@ use Nexmo\Message\Message;
 use Nexmo\Verify\Verification;
 use NexmoPHPSkeleton\Middleware\Session;
 use NexmoPHPSkeleton\Middleware\UserLoader;
+use Pantry\Delivery\Delivery;
 use Zend\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -90,6 +91,23 @@ $app->get('/admin', function (Request $request, Response $response) {
 
 $app->map(['GET', 'POST'], '/admin/delivery/new', function(Request $request, Response $response) {
     return $this->get('view')->render($response, 'new-delivery.twig.html');
+});
+
+$app->get('/admin/delivery/{id}', function(Request $request, Response $response, array $args) {
+    $db = $this->get('db');
+    $phone = $request->getQueryParams()['courier'];
+
+    $stmt = $db->prepare('UPDATE orders SET courier_phone=:phone, status = :status WHERE id=:id');
+    $stmt->execute(['id' => $args['id'], 'phone' => $phone, 'status' => Delivery::STATUS_DISPATCHED]);
+
+    $nexmo = $this->get('nexmo');
+    $nexmo->message()->send([
+        'to' => $phone,
+        'from' => getenv('NEXMO.PHONE'),
+        'text' => 'You have a new delivery assigned to you'
+    ]);
+
+    return new EmptyResponse();
 });
 
 // THIS WILL NEED TO BECOME A GET/POST
@@ -233,6 +251,94 @@ $app->map(['GET', 'POST'], '/webhooks/general', function(Request $request, Respo
                 'to' => $params['msisdn'],
                 'from' => getenv('NEXMO.PHONE'),
                 'text' => 'Unable to handle your request, please contact support'
+            ]);
+        }
+    } else if (strtolower($params['text']) === "delivering") {
+        $db = $this->get('db');
+        $nexmo = $this->get('nexmo');
+
+        $stmt = $db->prepare('SELECT * FROM orders WHERE courier_phone = :phone');
+        $stmt->execute(['phone' => $params['msisdn']]);
+        $order = $stmt->fetch();
+
+        if ($order) {
+            $stmt = $db->prepare('SELECT * FROM users WHERE uuid = :uuid');
+            $stmt->execute(['uuid' => $order['users_uuid']]);
+
+            $user = $stmt->fetch();
+            $pin = mt_rand(10000, 99999);
+
+            $stmt = $db->prepare('UPDATE orders SET status = :status WHERE id = :id');
+            $stmt->execute(['status' => Delivery::STATUS_ENROUTE, 'id' => $order['id']]);
+
+            $nexmo->message()->send([
+                'to' => $user['phone'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Your delivery is on the way! The verification pin is ' . $pin
+            ]);
+
+            $nexmo->message()->send([
+                'to' => $order['courier_phone'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Thank you! The verification pin to provide to the customer is ' . $pin
+            ]);
+        }
+    } else if (strtolower($params['text']) === "arrived") {
+        $db = $this->get('db');
+        $nexmo = $this->get('nexmo');
+
+        $stmt = $db->prepare('SELECT * FROM orders WHERE courier_phone = :phone');
+        $stmt->execute(['phone' => $params['msisdn']]);
+        $order = $stmt->fetch();
+
+        if ($order) {
+            $stmt = $db->prepare('SELECT * FROM users WHERE uuid = :uuid');
+            $stmt->execute(['uuid' => $order['users_uuid']]);
+
+            $user = $stmt->fetch();
+
+            $stmt = $db->prepare('UPDATE orders SET status = :status WHERE id = :id');
+            $stmt->execute(['status' => Delivery::STATUS_WAITING, 'id' => $order['id']]);
+
+            $nexmo->message()->send([
+                'to' => $user['phone'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Your delivery has arrived! Please make sure to verify the pin with the delivery person.'
+            ]);
+
+            $nexmo->message()->send([
+                'to' => $order['courier_phone'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Thanks! We will let the customer know. Remember to provide them with your verification pin.'
+            ]);
+        }
+    } else if (strtolower($params['text']) === "complete") {
+        $db = $this->get('db');
+        $nexmo = $this->get('nexmo');
+
+        $stmt = $db->prepare('SELECT * FROM orders WHERE courier_phone = :phone');
+        $stmt->execute(['phone' => $params['msisdn']]);
+        $order = $stmt->fetch();
+
+        if ($order) {
+            $stmt = $db->prepare('SELECT * FROM users WHERE uuid = :uuid');
+            $stmt->execute(['uuid' => $order['users_uuid']]);
+
+            $user = $stmt->fetch();
+
+            $stmt = $db->prepare('UPDATE orders SET status = :status WHERE id = :id');
+            $stmt->execute(['status' => Delivery::STATUS_DELIVERED, 'id' => $order['id']]);
+
+            $nexmo->message()->send([
+                'to' => $user['phone'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Thank you for trusting us with your delivery!'
+            ]);
+
+            $nexmo->message()->send([
+                'to' => $order['courier_phone'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Thanks! This delivery is marked as completed.'
             ]);
         }
     } else {

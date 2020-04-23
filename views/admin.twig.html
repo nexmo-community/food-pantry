@@ -20,13 +20,15 @@
     <tbody>
       {% for order in orders %}
       <tr {% if order.order.status == -1 %}class="color-orange"{% endif %}>
-        <td></td>
+        <td>{{order.order.courier_phone}}</td>
         <td>{{order.customer.phone}}</td>
         <td class="text-center">{{order.order.created_at|date("Y-m-d")}}</td>
         <td class="text-center">{{order.order.created_at|date("H:i")}}</td>
         <td class="text-center"></td>
         <td class="text-center">
-          {% if order.order.status == 1%}
+          {% if order.order.status == 0 %}
+            <a href="#" onclick="addCourier({{ order.order.id }})">Add Courier</a></a>
+          {% elseif order.order.status == 1%}
             <a href="#"><img src="images/times.png" alt="times"></a>
           {% else %}
           {% endif %}
@@ -43,4 +45,16 @@
   </div>
 
 </div>
+
+<script type="text/javascript">
+  function addCourier(orderId) {
+    courier = window.prompt("Please enter the courier number to take this delivery");
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function() {
+      location.reload();
+    }
+    xhr.open('GET', '/admin/delivery/' + orderId + '?courier=' + courier);
+    xhr.send();
+  }
+</script>
 {% endblock %}

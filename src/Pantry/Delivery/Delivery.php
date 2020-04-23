@@ -8,7 +8,12 @@ use Pantry\Entity\Customer;
 
 class Delivery
 {
+    const STATUS_CANCELLED = -1;
+    const STATUS_PLACED = 0;
     const STATUS_DISPATCHED = 1;
+    const STATUS_ENROUTE = 2;
+    const STATUS_WAITING = 3;
+    const STATUS_DELIVERED = 4;
 
     /**
      * @var Customer
