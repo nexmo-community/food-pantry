@@ -55,6 +55,11 @@ $app->get('/admin', function (Request $request, Response $response) {
     return $this->get('view')->render($response, 'admin.twig.html');
 });
 
+// THIS WILL NEED TO BECOME A GET/POST
+$app->get('/new', function (Request $request, Response $response) {
+    return $this->get('view')->render($response, 'new.twig.html');
+});
+
 $app->map(['GET', 'POST'], '/login', function (Request $request, Response $response) {
     if ($request->getMethod() === "POST") {
         $email = $request->getParsedBody()['email'];
