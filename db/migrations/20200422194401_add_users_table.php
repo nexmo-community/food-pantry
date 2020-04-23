@@ -36,6 +36,8 @@ class AddUsersTable extends AbstractMigration
             ->addColumn('uuid', 'string')
             ->addColumn('email', 'string')
             ->addColumn('password', 'string')
+            ->addColumn('phone', 'string')
+            ->addColumn('verified', 'boolean', ['default' => false])
         ;
         $users->save();
     }
