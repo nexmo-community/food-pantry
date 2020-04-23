@@ -1,29 +1,33 @@
 {% extends 'layouts/default.twig.html' %}
 
 {% block content %}
-<form method="post" class="w-full">
-  <div class="flex items-center mb-6">
-    <div class="w-1/2 text-right pr-4">
-      <label for="email">Email:</label>
-    </div>
-    <div class="w-1/2">
-      <input type="text" name="email" required class="border">
-    </div>
+<div class="row">
+  <div class="w-50">
+    <p class="title text-center">Sign Up</p>
+    <form method="post">
+        <input type="text" name="email" required class="text-center no-border mt-5" id="padr-12p" placeholder="email">
+        <div class="row">
+          <div class="col-3"></div>
+          <div class="form-border col-6"></div>
+          <div class="col-3"></div>
+        </div>
+        <input type="password" name="password" required class="text-center no-border mt-3"  placeholder="password">
+        <div class="row">
+          <div class="col-3"></div>
+          <div class="form-border col-6"></div>
+          <div class="col-3"></div>
+        </div>
+      <div class="text-center">
+        <input type="submit" class="btn blue-btn-form" value="Register for Deliveries">
+      </div>
+      <div class="text-center mt-1 sign-up">
+        Already have an account?
+        <a href="/login" class="black-bold">Login</a>
+      </div>
+    </form>
+
   </div>
 
-  <div class="flex items-center mb-6">
-    <div class="w-1/2 text-right pr-4">
-      <label for="password">Password: </label>
-    </div>
-    <div class="w-1/2">
-      <input type="text" name="password" required class="border">
-    </div>
-  </div>
-
-  <div class="flex items-center mb-6">
-    <div class="w-full text-center">
-      <input type="submit" class="text-white bg-black p-4 rounded shadow" value="Register for Deliveries">
-    </div>
-  </div>
-</form>
+  <img src="/images/choices.png" alt="ticket" class="w-50 right">
+</div>
 {% endblock %}
