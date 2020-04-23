@@ -10,5 +10,15 @@
       <th>Delivered Time</th>
     </tr>
   </thead>
+  <tbody>
+    {% for order in orders %}
+    <tr>
+      <td></td>
+      <td>{{order.customer.phone}}</td>
+      <td>{{order.order.created_at}}</td>
+      <td></td>
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>
 {% endblock %}

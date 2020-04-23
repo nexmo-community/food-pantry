@@ -2,7 +2,7 @@
 
 use Phinx\Migration\AbstractMigration;
 
-class AddUsersTable extends AbstractMigration
+class AddOrdersTable extends AbstractMigration
 {
     /**
      * Change Method.
@@ -31,14 +31,15 @@ class AddUsersTable extends AbstractMigration
      */
     public function change()
     {
-        $users = $this->table('users');
-        $users
-            ->addColumn('uuid', 'string')
-            ->addColumn('email', 'string')
-            ->addColumn('password', 'string')
-            ->addColumn('phone', 'string')
-            ->addColumn('verified', 'boolean', ['default' => false])
+        $table = $this->table('orders');
+        $table
+            ->addColumn('users_uuid', 'string')
+            ->addColumn('courier_phone', 'integer', ['default' => null, 'null' => true])
+            ->addColumn('status', 'integer', ['default' => 0])
+            ->addColumn('delivery_pin', 'integer', ['null' => true])
+            ->addTimestamps()
         ;
-        $users->save();
+
+        $table->save();
     }
 }
