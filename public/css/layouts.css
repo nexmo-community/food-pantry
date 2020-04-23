@@ -47,6 +47,11 @@
   color: #FD8369;
 }
 
+.black-bold{
+  color: black;
+  font-weight: 700;
+}
+
 ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
   color: #FD8369;
   opacity: 1; /* Firefox */
@@ -100,4 +105,10 @@
 
 #padr-12p{
   padding-right: 12%;
+}
+
+.sign-up{
+  font-size: 14px;
+  font-family: 'Rubik', sans-serif;
+
 }
