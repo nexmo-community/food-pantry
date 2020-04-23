@@ -9,11 +9,17 @@ use Slim\Factory\AppFactory;
 use Slim\Views\TwigMiddleware;
 use Knlv\Slim\Views\TwigMessages;
 use Nexmo\Client\Credentials\Basic;
+use Nexmo\Client\Exception\Request as ExceptionRequest;
+use Nexmo\Message\Message;
+use Nexmo\Verify\Verification;
 use NexmoPHPSkeleton\Middleware\Session;
+use NexmoPHPSkeleton\Middleware\UserLoader;
 use Zend\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
+use Zend\Diactoros\Response\EmptyResponse;
+use Zend\Diactoros\Response\JsonResponse;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -36,6 +42,14 @@ $container->set('db', function() use ($container) {
     $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
     return $pdo;
 });
+$container->set('nexmo', function() use ($container) {
+    $nexmo = new Client(
+        new Basic(getenv('NEXMO_API_KEY'), getenv('NEXMO_API_SECRET')),
+        ['app' => ['name' => 'php-skeleton-app', 'version' => '1.0.0']]
+    );
+
+    return $nexmo;
+});
 AppFactory::setContainer($container);
 
 // Instantiate App
@@ -44,6 +58,7 @@ $app = AppFactory::create();
 // Add middleware
 $app->addErrorMiddleware(true, true, true);
 $app->add(new Session());
+$app->add(new UserLoader($app->getContainer()->get('db')));
 $app->add(TwigMiddleware::createFromContainer($app));
 
 // Add routes
@@ -52,7 +67,29 @@ $app->get('/', function (Request $request, Response $response) {
 });
 
 $app->get('/admin', function (Request $request, Response $response) {
-    return $this->get('view')->render($response, 'admin.twig.html');
+    /** @var \PDO $db */
+    $db = $this->get('db');
+
+    $stmt = $db->prepare('SELECT * FROM orders');
+    $stmt->execute();
+
+    $orders = [];
+    while (($row = $stmt->fetch()) !== false) {
+        $cstmt = $db->prepare('SELECT * FROM users WHERE uuid=:uuid');
+        $cstmt->execute(['uuid' => $row['users_uuid']]);
+        $customer = $cstmt->fetch();
+
+        $orders[] = [
+            'order' => $row,
+            'customer' => $customer
+        ];
+    }
+
+    return $this->get('view')->render($response, 'admin.twig.html', ['orders' => $orders]);
+});
+
+$app->map(['GET', 'POST'], '/admin/delivery/new', function(Request $request, Response $response) {
+    return $this->get('view')->render($response, 'new-delivery.twig.html');
 });
 
 $app->map(['GET', 'POST'], '/login', function (Request $request, Response $response) {
@@ -67,7 +104,8 @@ $app->map(['GET', 'POST'], '/login', function (Request $request, Response $respo
 
         $user = $stmt->fetch();
         if ($user) {
-            $this->get('flash')->addMessage('success', $password);
+            $this->get('flash')->addMessage('success', 'Logged in!');
+            $_SESSION['user_id'] = $user['uuid'];
             return new RedirectResponse('/');
         } else {
             $this->get('flash')->addMessage('error', 'Invalid username/password');
@@ -78,10 +116,16 @@ $app->map(['GET', 'POST'], '/login', function (Request $request, Response $respo
     return $this->get('view')->render($response, 'login.twig.html');
 });
 
+$app->get('/logout', function (Request $request, Response $response) {
+    session_destroy();
+    return new RedirectResponse('/');
+});
+
 $app->map(['GET', 'POST'], '/register', function (Request $request, Response $response) {
     if ($request->getMethod() === "POST") {
         $email = $request->getParsedBody()['email'];
         $password = $request->getParsedBody()['password'];
+        $phone = $request->getParsedBody()['phone'];
 
         /** @var \PDO $db */
         $db = $this->get('db');
@@ -90,8 +134,16 @@ $app->map(['GET', 'POST'], '/register', function (Request $request, Response $re
 
         $user = $stmt->fetch();
         if (!$user) {
-            $stmt = $db->prepare('INSERT INTO users (uuid, email, password) VALUES (:uuid, :email, :password)');
-            $stmt->execute(['uuid' => Uuid::uuid4()->toString(), 'email' => $email, 'password' => password_hash($password, PASSWORD_DEFAULT)]);
+            /** @var Client $nexmo */
+            try {
+                $nexmo = $this->get('nexmo');
+                $ni = $nexmo->insights()->basic($phone);
+            } catch (ExceptionRequest $e) {
+                $this->get('flash')->addMessage('error', "Invalid phone number, please make sure to include the country code and nothing but numbers");
+                return new RedirectResponse('/register');
+            }
+            $stmt = $db->prepare('INSERT INTO users (uuid, email, phone, password) VALUES (:uuid, :email, :phone, :password)');
+            $stmt->execute(['uuid' => Uuid::uuid4()->toString(), 'email' => $email, 'phone' => $phone, 'password' => password_hash($password, PASSWORD_DEFAULT)]);
 
             $this->get('flash')->addMessage('success', "Registered, please log in!");
             return new RedirectResponse('/login');
@@ -102,6 +154,92 @@ $app->map(['GET', 'POST'], '/register', function (Request $request, Response $re
     }
 
     return $this->get('view')->render($response, 'register.twig.html');
+});
+
+$app->map(['GET', 'POST'], '/user/verify', function(Request $request, Response $response) {
+    if (!isset($_SESSION['user'])) {
+        return new RedirectResponse('/login');
+    }
+
+    return $this->get('view')->render($response, 'verify.twig.html');
+});
+
+$app->get('/user/verify/start', function(Request $request, Response $response) {
+    if (!isset($_SESSION['user'])) {
+        return new RedirectResponse('/login');
+    }
+
+    $user = $_SESSION['user'];
+    /** @var Client $nexmo */
+    $nexmo = $this->get('nexmo');
+    $verify = $nexmo->verify()->start(new Verification($user['phone'], 'Pantry Test'));
+    $_SESSION['verification_id'] = $verify->getRequestId();
+
+    return new EmptyResponse();
+});
+
+$app->get('/user/verify/confirm', function(Request $request, Response $response) {
+    if (!isset($_SESSION['user'])) {
+        return new RedirectResponse('/login');
+    }
+
+    $user = $_SESSION['user'];
+    $verificationId = $_SESSION['verification_id'];
+    /** @var Client $nexmo */
+    $nexmo = $this->get('nexmo');
+    $nexmo->verify()->check(new Verification($verificationId), $request->getQueryParams()['pin']);
+
+    $db = $this->get('db');
+    $stmt = $db->prepare('UPDATE users SET verified = 1 WHERE uuid = :uuid');
+    $stmt->execute(['uuid' => $user['uuid']]);
+    unset($_SESSION['verification_id']);
+
+    return new EmptyResponse();
+});
+
+$app->map(['GET', 'POST'], '/webhooks/general', function(Request $request, Response $response) {
+    $params = $request->getParsedBody();
+
+    if (!$params || !count($params)) {
+        $params = $request->getQueryParams();
+    }
+
+    if (strtolower($params['text']) === "new delivery") {
+        $db = $this->get('db');
+        $nexmo = $this->get('nexmo');
+
+        $stmt = $db->prepare('SELECT * FROM users WHERE phone = :phone');
+        $stmt->execute(['phone' => $params['msisdn']]);
+        $user = $stmt->fetch();
+    
+        if ($user && $user['verified'] == 1) {
+            $stmt = $db->prepare("INSERT INTO orders (users_uuid) VALUES (:uuid)");
+            $stmt->execute(['uuid' => $user['uuid']]);
+    
+            /** @var Client $nexmo */
+            $nexmo->message()->send([
+                'to' => $params['msisdn'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Your order has been placed!'
+            ]);
+        } else {
+            /** @var Client $nexmo */
+            $nexmo->message()->send([
+                'to' => $params['msisdn'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Unable to handle your request, please contact support'
+            ]);
+        }
+    } else {
+        /** @var Client $nexmo */
+        $nexmo->message()->send([
+            'to' => $params['msisdn'],
+            'from' => getenv('NEXMO.PHONE'),
+            'text' => 'Unable to handle your request, please contact support'
+        ]);
+    }
+
+    return new EmptyResponse();
 });
 
 $app->run();
