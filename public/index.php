@@ -10,6 +10,7 @@ use Slim\Views\TwigMiddleware;
 use Knlv\Slim\Views\TwigMessages;
 use Nexmo\Client\Credentials\Basic;
 use Nexmo\Client\Exception\Request as ExceptionRequest;
+use Nexmo\Message\Message;
 use Nexmo\Verify\Verification;
 use NexmoPHPSkeleton\Middleware\Session;
 use NexmoPHPSkeleton\Middleware\UserLoader;
@@ -66,7 +67,29 @@ $app->get('/', function (Request $request, Response $response) {
 });
 
 $app->get('/admin', function (Request $request, Response $response) {
-    return $this->get('view')->render($response, 'admin.twig.html');
+    /** @var \PDO $db */
+    $db = $this->get('db');
+
+    $stmt = $db->prepare('SELECT * FROM orders');
+    $stmt->execute();
+
+    $orders = [];
+    while (($row = $stmt->fetch()) !== false) {
+        $cstmt = $db->prepare('SELECT * FROM users WHERE uuid=:uuid');
+        $cstmt->execute(['uuid' => $row['users_uuid']]);
+        $customer = $cstmt->fetch();
+
+        $orders[] = [
+            'order' => $row,
+            'customer' => $customer
+        ];
+    }
+
+    return $this->get('view')->render($response, 'admin.twig.html', ['orders' => $orders]);
+});
+
+$app->map(['GET', 'POST'], '/admin/delivery/new', function(Request $request, Response $response) {
+    return $this->get('view')->render($response, 'new-delivery.twig.html');
 });
 
 $app->map(['GET', 'POST'], '/login', function (Request $request, Response $response) {
@@ -170,6 +193,51 @@ $app->get('/user/verify/confirm', function(Request $request, Response $response)
     $stmt = $db->prepare('UPDATE users SET verified = 1 WHERE uuid = :uuid');
     $stmt->execute(['uuid' => $user['uuid']]);
     unset($_SESSION['verification_id']);
+
+    return new EmptyResponse();
+});
+
+$app->map(['GET', 'POST'], '/webhooks/general', function(Request $request, Response $response) {
+    $params = $request->getParsedBody();
+
+    if (!$params || !count($params)) {
+        $params = $request->getQueryParams();
+    }
+
+    if (strtolower($params['text']) === "new delivery") {
+        $db = $this->get('db');
+        $nexmo = $this->get('nexmo');
+
+        $stmt = $db->prepare('SELECT * FROM users WHERE phone = :phone');
+        $stmt->execute(['phone' => $params['msisdn']]);
+        $user = $stmt->fetch();
+    
+        if ($user && $user['verified'] == 1) {
+            $stmt = $db->prepare("INSERT INTO orders (users_uuid) VALUES (:uuid)");
+            $stmt->execute(['uuid' => $user['uuid']]);
+    
+            /** @var Client $nexmo */
+            $nexmo->message()->send([
+                'to' => $params['msisdn'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Your order has been placed!'
+            ]);
+        } else {
+            /** @var Client $nexmo */
+            $nexmo->message()->send([
+                'to' => $params['msisdn'],
+                'from' => getenv('NEXMO.PHONE'),
+                'text' => 'Unable to handle your request, please contact support'
+            ]);
+        }
+    } else {
+        /** @var Client $nexmo */
+        $nexmo->message()->send([
+            'to' => $params['msisdn'],
+            'from' => getenv('NEXMO.PHONE'),
+            'text' => 'Unable to handle your request, please contact support'
+        ]);
+    }
 
     return new EmptyResponse();
 });
