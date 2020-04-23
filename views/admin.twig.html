@@ -1,24 +1,46 @@
 {% extends 'layouts/default.twig.html' %}
 
 {% block content %}
-<table>
-  <thead>
-    <tr>
-      <th>Courier</th>
-      <th>Recipient</th>
-      <th>Order Time</th>
-      <th>Delivered Time</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for order in orders %}
-    <tr>
-      <td></td>
-      <td>{{order.customer.phone}}</td>
-      <td>{{order.order.created_at}}</td>
-      <td></td>
-    </tr>
+
+<div class="bike-bg">
+  <p id="deliveries">Deliveries</p>
+  <div id="gradient-border"></div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col" class="headers">Courier</th>
+        <th scope="col" class="headers">Recipient</th>
+        <th scope="col" class="headers">Date</th>
+        <th scope="col" class="headers">Order Time</th>
+        <th scope="col" class="headers">Delivered Time</th>
+        <th scope="col" class="headers">Cancel Order</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr {% if order.order.status == -1 %}class="color-orange"{% endif %}>
+        <td></td>
+        <td>{{order.customer.phone}}</td>
+        <td class="text-center">{{order.order.created_at|date("Y-m-d")}}</td>
+        <td class="text-center">{{order.order.created_at|date("H:i")}}</td>
+        <td class="text-center"></td>
+        <td class="text-center">
+          {% if order.order.status == 1%}
+            <a href="#"><img src="images/times.png" alt="times"></a>
+          {% else %}
+          {% endif %}
+        </td>
+      </tr>
     {% endfor %}
-  </tbody>
-</table>
+    </tbody>
+  </table>
+
+  <div class="row">
+    <div class="col-3"></div>
+      <a href="#" class="btn blue-btn-dash col-6">New Delivery</a>
+    <div class="col-3"></div>
+  </div>
+
+</div>
 {% endblock %}

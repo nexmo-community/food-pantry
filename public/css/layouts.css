@@ -83,6 +83,18 @@
   box-shadow: 0px 10px 20px rgba(116, 213, 222, 0.25);
 }
 
+.blue-btn-dash{
+  font-size: 24px;
+  background-color: #74D5DE;
+  color: white;
+  font-family: 'Rubik', sans-serif;
+  font-weight: 700;
+  border-radius: 35px;
+  margin-top: 5%;
+  padding: 15px 120px 15px 120px;
+  box-shadow: 0px 10px 20px rgba(116, 213, 222, 0.25);
+}
+
 .step-img{
   display: block;
   margin-left: auto;
@@ -110,5 +122,42 @@
 .sign-up{
   font-size: 14px;
   font-family: 'Rubik', sans-serif;
+}
 
+.headers{
+  font-family: 'Oxygen', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  border: none !important;
+}
+
+td{
+  border: none !important;
+  font-family: 'Rubik', sans-serif;
+  font-size: 18px;
+}
+
+#deliveries{
+  font-family: 'Oxygen', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+#gradient-border{
+  margin-top: -17px;
+  width: 97%;
+  border-top: 5px solid;
+  border-image-source: linear-gradient(45deg, rgb(253,131,105), rgb(116,213,222));
+  border-image-slice: 1;
+}
+
+.bike-bg{
+    /* The image used */
+  background-image: url("/images/bike-bg.png");
+  /* Full height */
+  height: 100vh;
+  /* Center and scale the image nicely */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
