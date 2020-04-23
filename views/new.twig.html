@@ -1,0 +1,29 @@
+{% extends 'layouts/default.twig.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="w-50">
+    <p class="title text-center">New Delivery</p>
+    <form method="post">
+        <input type="text" name="courier" required class="text-center no-border mt-5" id="padr-12p" placeholder="courier #">
+        <div class="row">
+          <div class="col-3"></div>
+          <div class="form-border col-6"></div>
+          <div class="col-3"></div>
+        </div>
+        <input type="text" name="recipient" required class="text-center no-border mt-3" id="padr-12p"  placeholder="recipient #">
+        <div class="row">
+          <div class="col-3"></div>
+          <div class="form-border col-6"></div>
+          <div class="col-3"></div>
+        </div>
+      <div class="text-center">
+        <input type="submit" class="btn blue-btn-form" value="New Delivery">
+      </div>
+    </form>
+
+  </div>
+
+  <img src="/images/unlock.png" alt="ticket" class="w-50 right">
+</div>
+{% endblock %}

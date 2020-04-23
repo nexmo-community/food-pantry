@@ -92,6 +92,11 @@ $app->map(['GET', 'POST'], '/admin/delivery/new', function(Request $request, Res
     return $this->get('view')->render($response, 'new-delivery.twig.html');
 });
 
+// THIS WILL NEED TO BECOME A GET/POST
+$app->get('/new', function (Request $request, Response $response) {
+    return $this->get('view')->render($response, 'new.twig.html');
+});
+
 $app->map(['GET', 'POST'], '/login', function (Request $request, Response $response) {
     if ($request->getMethod() === "POST") {
         $email = $request->getParsedBody()['email'];
