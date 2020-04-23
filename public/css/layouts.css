@@ -147,7 +147,7 @@ td{
   margin-top: -17px;
   width: 97%;
   border-top: 5px solid;
-  border-image-source: linear-gradient(45deg, rgb(253,131,105), rgb(116,213,222));
+  border-image-source: linear-gradient(45deg, rgb(116,213,222), rgb(253,131,105));
   border-image-slice: 1;
 }
 
