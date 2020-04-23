@@ -1,0 +1,49 @@
+{% extends 'layouts/default.twig.html' %}
+
+{% block content %}
+<div id="step-1">
+  Before we can send a delivery to you, we need to verify your phone number. Please click the 'Start Verification' button to start the process.
+
+  <p>
+    <button name="start" onclick="startVerification()">Start Verification</button>
+  </p>
+</div>
+
+<div id="step-2" style="display: none">
+  Your phone should get a text message with a PIN number, or a phone call with a PIN number being read to you.
+
+  <p>
+    Enter the PIN in the field below and click 'Verify' to verify your number.
+  </p>
+
+  <p>
+    <input type="text" name="pin" id="pin"><button id="submit-pin" onclick="confirmVerification()">Verify</button>
+  </p>
+</div>
+
+<div id="step-3" style="display: none">
+  Verified!
+</div>
+
+<script type="text/javascript">
+  function startVerification() {
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function() {
+      document.getElementById('step-1').style.display = 'none';
+      document.getElementById('step-2').style.display = 'block'
+    }
+    xhr.open('GET', '/user/verify/start');
+    xhr.send();
+  }
+
+  function confirmVerification() {
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function() {
+      document.getElementById('step-2').style.display = 'none';
+      document.getElementById('step-3').style.display = 'block'
+    }
+    xhr.open('GET', '/user/verify/confirm?pin=' + document.getElementById('pin').value);
+    xhr.send();
+  }
+</script>
+{% endblock %}

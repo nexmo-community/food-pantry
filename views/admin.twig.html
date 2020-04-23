@@ -18,100 +18,21 @@
       </tr>
     </thead>
     <tbody>
-      <!-- for each delivery in deliveries: -->
-      <tr>
-        <!-- delivery.courier -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.recipient -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.date -->
-        <td>10-10-20</td>
-        <!-- delivery.order_time -->
-        <td class="text-center">15:23</td>
-        <!-- delivery.delivered_time -->
-        <td class="text-center">15:45</td>
-      </tr>
-
-      <!-- if delivery.active? -->
-      <tr>
-        <!-- delivery.courier -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.recipient -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.date -->
-        <td>10-10-20</td>
-        <!-- delivery.order_time -->
-        <td class="text-center"s>15:23</td>
-        <!-- delivery.delivered_time -->
+      {% for order in orders %}
+      <tr {% if order.order.status == -1 %}class="color-orange"{% endif %}>
         <td></td>
-
+        <td>{{order.customer.phone}}</td>
+        <td class="text-center">{{order.order.created_at|date("Y-m-d")}}</td>
+        <td class="text-center">{{order.order.created_at|date("H:i")}}</td>
+        <td class="text-center"></td>
         <td class="text-center">
-          <a href="#"><img src="images/times.png" alt="times"></a>
+          {% if order.order.status == 1%}
+            <a href="#"><img src="images/times.png" alt="times"></a>
+          {% else %}
+          {% endif %}
         </td>
       </tr>
-
-      <!-- if delivery.cancelled? -->
-      <tr class="color-orange">
-        <!-- delivery.courier -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.recipient -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.date -->
-        <td>10-10-20</td>
-        <!-- delivery.order_time -->
-        <td class="text-center">15:23</td>
-        <!-- delivery.delivered_time -->
-        <td class="text-center">CANCELLED</td>
-        <td></td>
-      </tr>
-      <tr>
-        <!-- delivery.courier -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.recipient -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.date -->
-        <td>10-10-20</td>
-        <!-- delivery.order_time -->
-        <td class="text-center">15:23</td>
-        <!-- delivery.delivered_time -->
-        <td class="text-center">15:45</td>
-      </tr>
-      <tr>
-        <!-- delivery.courier -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.recipient -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.date -->
-        <td>10-10-20</td>
-        <!-- delivery.order_time -->
-        <td class="text-center">15:23</td>
-        <!-- delivery.delivered_time -->
-        <td class="text-center">15:45</td>
-      </tr>
-      <tr>
-        <!-- delivery.courier -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.recipient -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.date -->
-        <td>10-10-20</td>
-        <!-- delivery.order_time -->
-        <td class="text-center">15:23</td>
-        <!-- delivery.delivered_time -->
-        <td class="text-center">15:45</td>
-      </tr>
-      <tr>
-        <!-- delivery.courier -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.recipient -->
-        <td>1-(555)-555-5555</td>
-        <!-- delivery.date -->
-        <td>10-10-20</td>
-        <!-- delivery.order_time -->
-        <td class="text-center">15:23</td>
-        <!-- delivery.delivered_time -->
-        <td class="text-center">15:45</td>
-      </tr>
+    {% endfor %}
     </tbody>
   </table>
 
@@ -122,5 +43,4 @@
   </div>
 
 </div>
-
 {% endblock %}
